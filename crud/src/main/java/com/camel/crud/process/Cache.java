@@ -25,9 +25,15 @@ public class Cache {
     public Usuario getUser(String id){
       return listUsuario.get(id);
     }
-    public void delete(@Header("id") String id) {//String
+    public String delete(@Header("id") String id) {//String
+        String m="";
         if (listUsuario.get(id) != null) {
             listUsuario.remove(id);
+            m= "el usuario que se removio tiene de id: "+ id;
         }
+        else {
+            m="El id: "+id+" no existe";
+        }
+        return m;
     }
 }
