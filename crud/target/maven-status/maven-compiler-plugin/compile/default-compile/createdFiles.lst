@@ -1,0 +1,5 @@
+com\camel\crud\process\ProcessDataExchangeProcessor.class
+com\camel\crud\route\CrudRoute.class
+com\camel\crud\Application.class
+com\camel\crud\process\SetDataExchangeProcessor.class
+com\camel\crud\entity\Usuario.class

@@ -1,0 +1,5 @@
+com\camel\crud\KubernetesTestDeployer$1.class
+com\camel\crud\KubernetesTestUtil.class
+com\camel\crud\KubernetesTestConfig.class
+com\camel\crud\KubernetesTestSetup.class
+com\camel\crud\KubernetesTestDeployer.class
