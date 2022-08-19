@@ -36,4 +36,8 @@ public class Cache {
         }
         return m;
     }
+    public Usuario update(@Body Usuario usuario){
+        listUsuario.put(usuario.getId(), usuario);
+        return listUsuario.get(usuario.getId());
+    }
 }

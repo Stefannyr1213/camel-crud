@@ -42,16 +42,20 @@ public class CrudRoute extends RouteBuilder {
                 .get("/{id}").outType(Usuario.class)
                 .to("direct:getUsuario")
                 .delete("/{id}").outType(String.class)
-                .to("direct:delete");
+                .to("direct:delete")
+                .put("/put").type(Usuario.class).outType(Usuario.class)
+                .to("direct:update");
 
+        from("direct:update").streamCaching()
+                .log("Realizando update")
+                .bean(cache,"update")
+                .log("${body}");
         from("direct:delete")
                 .log("Realizando delete usuario")
-                //.setBody(simple("${header.id}"))
                 .bean(cache, "delete");
 
         from("direct:getUsuario")
                 .log("Realizando get usuario ${header.id}")
-              //  .setBody(simple("${header.id}"))
                 .bean(cache, "getUser(${header.id})")
                 .log("${body}");
         from("direct:getUsuarios")
