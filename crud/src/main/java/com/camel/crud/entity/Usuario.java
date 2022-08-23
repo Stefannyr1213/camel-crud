@@ -2,13 +2,18 @@ package com.camel.crud.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import javax.validation.constraints.NotNull;
+
 
 public class Usuario {
 
+    @NotNull
     @JsonProperty("usuario_id")
     private String id;
+    @NotNull
     @JsonProperty("name")
     private String name;
+    @NotNull
     @JsonProperty("age")
     private int age;
 

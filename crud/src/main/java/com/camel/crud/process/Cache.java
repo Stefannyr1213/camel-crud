@@ -12,10 +12,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 @Component
-public class Cache {
+public class Cache  {
     private static final Map<String, Usuario> listUsuario= new ConcurrentHashMap<>();
     @Handler
-    public void addUser(@Body Usuario usuario){
+    public void addUser(@Body Usuario usuario) {
 
         listUsuario.put(usuario.getId(),usuario);
     }

@@ -1,15 +1,16 @@
-package com.camel.crud.dtos;
+package com.camel.crud.exception;
 
-public class ResponseDTO {
+public class ExceptionUserNotExists extends Exception{
     private String message;
 
-    public ResponseDTO() {
+    public ExceptionUserNotExists() {
     }
 
-    public ResponseDTO(String message) {
+    public ExceptionUserNotExists(String message) {
         this.message = message;
     }
 
+    @Override
     public String getMessage() {
         return message;
     }

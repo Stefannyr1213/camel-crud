@@ -20,8 +20,8 @@ private static final Logger LOGGER= LoggerFactory.getLogger(ProcessDataExchangeP
                ,usuario.getId()
        ,usuario.getName()
        ,usuario.getAge());
-        ResponseDTO responseDTO=new ResponseDTO();
-        responseDTO.setMessage("dto");
+        ResponseDTO responseDTO=new ResponseDTO("El usuario se agrego correctamente");
+
         exchange.getOut().setBody(responseDTO);
     }
 }

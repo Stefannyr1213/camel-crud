@@ -101,7 +101,12 @@
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-jetty</artifactId>
         </dependency>
-
+        <!--bean_validator-->
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-bean-validator</artifactId>
+            <!-- use the same version as your Camel core version -->
+        </dependency>
 
     </dependencies>
 
