@@ -13,13 +13,14 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jackson.JacksonDataFormat;
 
+import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class CrudRoute extends RouteBuilder {
-    private JacksonDataFormat jsonUsuario= new JacksonDataFormat(Usuario.class);
+    private JacksonDataFormat jsonUsuario= new JacksonDataFormat(ResponseDTO.class);
     @Autowired
     private SetDataExchangeProcessor setDataExchangeProcessor;
     @Autowired
@@ -39,7 +40,12 @@ public class CrudRoute extends RouteBuilder {
         onException(ExceptionUserNotExists.class)
                 .handled(Boolean.TRUE)
                 .log(LoggingLevel.ERROR,"error:${exception.message}")
-                .process(exchange -> exchange.getOut().setBody(new ResponseDTO("Usuario no Existe")))
+                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("400"))
+                .process(exchange -> {
+                    exchange.getOut().setHeader(Exchange.HTTP_RESPONSE_CODE, "400");
+                    exchange.getOut().setBody(new ResponseDTO("Usuario no Existe"));})
+                .log("${body}").marshal(jsonUsuario)
+                .log("Despues de unmarsharl ${body}")
                 .end();
 
         restConfiguration() //se empieza a configurar un componente rest para hacer uso de endpoints a partir de REST
@@ -85,15 +91,18 @@ public class CrudRoute extends RouteBuilder {
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("404"))
                 .end();
 
-        from("direct:getUsuario")
+        from("direct:getUsuario").streamCaching()
                 .log("Realizando get usuario ${header.id}")
+                .bean(cache, "getUser(${header.id})")
                 .choice()
-                    .when(simple("${header.id} == 4"))//validar si ese id ya esta en la lista
+                    .when(simple("${header.id} != ${body.id}"))//validar si ese id ya esta en la lista
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("400"))
                     .throwException(new ExceptionUserNotExists("Usuario no Existe"))
+                .endChoice()
                 .otherwise()
-                    .bean(cache, "getUser(${header.id})")
+                .log("otherwise")
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("200"))
+                .end()
                 .log("${body}")
                 .end();
 
@@ -105,6 +114,8 @@ public class CrudRoute extends RouteBuilder {
 
         from("direct:postUsuario").streamCaching()
                 .log("Realizando post ${body}")
+                .to("bean-validator:validar-usuario")
+
                 .choice()
                     .when(simple("${body.id} == null"))
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("400"))
