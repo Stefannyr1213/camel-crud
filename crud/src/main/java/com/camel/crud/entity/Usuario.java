@@ -1,6 +1,7 @@
 package com.camel.crud.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeId;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
@@ -9,7 +10,7 @@ import javax.validation.constraints.Null;
 
 
 public class Usuario {
-
+    @JsonTypeId
     @NotBlank
     @JsonProperty("id")
     private String id;

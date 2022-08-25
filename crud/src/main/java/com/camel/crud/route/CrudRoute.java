@@ -86,18 +86,20 @@ public class CrudRoute extends RouteBuilder {
 
         from("direct:delete")
                 .log("Realizando delete usuario")
+                .to("sql:DELETE FROM user WHERE userId =:#id?dataSource=#dataSource")
                 .choice()
                     .when(simple("${header.id} == null"))
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("400"))
                     .throwException(new ExceptionUserNotFound("Usuario no encontrado"))
                 .otherwise()
-                    .bean(cache, "delete")
+                    //.bean(cache, "delete")
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("404"))
                 .end();
 
         from("direct:getUsuario").streamCaching()
                 .log("Realizando get usuario ${header.id}")
-                .bean(cache, "getUser(${header.id})")
+                //.bean(cache, "getUser(${header.id})")
+                .to("sql:select * from user where userId = :#id?dataSource=#dataSource")
                 .choice()
                     .when(simple("${header.id} != ${body.id}"))//validar si ese id ya esta en la lista
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("400"))
@@ -131,7 +133,7 @@ public class CrudRoute extends RouteBuilder {
                 .otherwise()
                     //.bean(cache)//si
                     //.process(processDataExchangeProcessor)//si
-                    .to("sql: insert INTO user(userId, userName, userAge) VALUES (:#userId, :#userName, :#userAge);?dataSource=#dataSource")
+                    .to("sql: insert INTO user(userId, userName, userAge) VALUES (:#id, :#name, :#age)?dataSource=#dataSource")
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("200"))
                 .log("${body}")
                 .end();
