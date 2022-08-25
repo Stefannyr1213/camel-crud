@@ -18,8 +18,12 @@ import org.apache.camel.model.rest.RestBindingMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.sql.DataSource;
+
 @Component
 public class CrudRoute extends RouteBuilder {
+
+
     private JacksonDataFormat jsonUsuario= new JacksonDataFormat(ResponseDTO.class);
     @Autowired
     private SetDataExchangeProcessor setDataExchangeProcessor;
@@ -108,7 +112,9 @@ public class CrudRoute extends RouteBuilder {
 
         from("direct:getUsuarios")
                         .log("Realizando get")
-                        .bean(cache,"getUsers");
+                       // .bean(cache,"getUsers")//si
+                .to("sql:select * from user?dataSource=#dataSource")
+                .log("sql ${body}");
 
 
 
@@ -123,8 +129,9 @@ public class CrudRoute extends RouteBuilder {
                   //  .process(exchange -> exchange.getOut().setBody(new ResponseDTO("no envio el id")))
                    // .setBody(bean(new ResponseDTO("no envio el id")))
                 .otherwise()
-                    .bean(cache)
-                    .process(processDataExchangeProcessor)
+                    //.bean(cache)//si
+                    //.process(processDataExchangeProcessor)//si
+                    .to("sql: insert INTO user(userId, userName, userAge) VALUES (:#userId, :#userName, :#userAge);?dataSource=#dataSource")
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("200"))
                 .log("${body}")
                 .end();

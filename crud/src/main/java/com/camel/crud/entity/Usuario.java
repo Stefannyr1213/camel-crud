@@ -11,7 +11,7 @@ import javax.validation.constraints.Null;
 public class Usuario {
 
     @NotBlank
-    @JsonProperty("usuario_id")
+    @JsonProperty("id")
     private String id;
     @NotBlank
     @JsonProperty("name")
