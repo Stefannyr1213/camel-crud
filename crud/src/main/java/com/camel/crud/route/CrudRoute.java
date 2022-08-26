@@ -123,7 +123,6 @@ public class CrudRoute extends RouteBuilder {
         from("direct:postUsuario").streamCaching()
                 .log("Realizando post ${body}")
                 .to("bean-validator:validar-usuario")
-
                 .choice()
                     .when(simple("${body.id} == null"))
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("400"))
