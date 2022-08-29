@@ -24,7 +24,8 @@ import javax.sql.DataSource;
 public class CrudRoute extends RouteBuilder {
 
 
-    private JacksonDataFormat jsonUsuario= new JacksonDataFormat(ResponseDTO.class);
+    private JacksonDataFormat jsonDTO= new JacksonDataFormat(ResponseDTO.class);
+    private JacksonDataFormat jsonUsuario= new JacksonDataFormat(Usuario.class);
     @Autowired
     private SetDataExchangeProcessor setDataExchangeProcessor;
     @Autowired
@@ -38,7 +39,12 @@ public class CrudRoute extends RouteBuilder {
         onException(ExceptionUserNotFound.class)
                 .handled(Boolean.TRUE)
                 .log(LoggingLevel.ERROR,"error:${exception.message}")
-                .process(exchange -> exchange.getOut().setBody(new ResponseDTO("Usuario no encontrado")))
+                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("400"))
+                .process(exchange ->  {
+                        exchange.getOut().setHeader(Exchange.HTTP_RESPONSE_CODE, "400");
+                        exchange.getOut().setBody(new ResponseDTO("Usuario no encontrado"));})
+                .log("${body}").marshal(jsonDTO)
+                .log("Despues de unmarsharl ${body}")
                 .end();
 
         onException(ExceptionUserNotExists.class)
@@ -48,7 +54,7 @@ public class CrudRoute extends RouteBuilder {
                 .process(exchange -> {
                     exchange.getOut().setHeader(Exchange.HTTP_RESPONSE_CODE, "400");
                     exchange.getOut().setBody(new ResponseDTO("Usuario no Existe"));})
-                .log("${body}").marshal(jsonUsuario)
+                .log("${body}").marshal(jsonDTO)
                 .log("Despues de unmarsharl ${body}")
                 .end();
 
@@ -73,14 +79,20 @@ public class CrudRoute extends RouteBuilder {
                 .to("direct:update");
 
         from("direct:update").streamCaching()
-                .log("Realizando update")
+                .log("Realizando update ${body.userId}")
+                .setHeader("userId",simple("${body.userId}"))
                 .choice()
-                    .when(simple("${header.id} == null"))
+                    .when(simple("${body.userId} == null"))
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("400"))
                     .throwException(new ExceptionUserNotFound("Usuario no encontrado"))
                 .otherwise()
-                    .bean(cache,"update")
-                    .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("200"))
+                    //.bean(cache,"update")
+                .setHeader("userId",simple("${body.userId}"))
+                .setHeader("userName",simple("${body.userName}"))
+                .setHeader("userAge",simple("${body.userAge}"))
+                .to("sql: insert INTO user(userId, userName, userAge) VALUES (:#userId, :#userName, :#userAge)?dataSource=#dataSource")
+
+                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("200"))
                 .log("${body}")
                 .end();
 
@@ -99,9 +111,13 @@ public class CrudRoute extends RouteBuilder {
         from("direct:getUsuario").streamCaching()
                 .log("Realizando get usuario ${header.id}")
                 //.bean(cache, "getUser(${header.id})")
-                .to("sql:select * from user where userId = :#id?dataSource=#dataSource")
+                //.setHeader("userId",simple("${header.id}"))
+                .to("sql:select * from user where userId = :#id ?dataSource=#dataSource&outputType=SelectOne&outputClass=com.camel.crud.entity.Usuario")
+                .log("${body}")
                 .choice()
-                    .when(simple("${header.id} != ${body.id}"))//validar si ese id ya esta en la lista
+                    //.bean(cache,"getUsers")
+                    //.setBody(simple("getUsers.userId"))
+                    .when(body().isNull())//v
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("400"))
                     .throwException(new ExceptionUserNotExists("Usuario no Existe"))
                 .endChoice()
@@ -119,12 +135,11 @@ public class CrudRoute extends RouteBuilder {
                 .log("sql ${body}");
 
 
-
         from("direct:postUsuario").streamCaching()
-                .log("Realizando post ${body}")
-                .to("bean-validator:validar-usuario")
+                .log("Realizando post ${body.userId}")
+                //.to("bean-validator:validar-usuario")
                 .choice()
-                    .when(simple("${body.id} == null"))
+                    .when(simple("${body.userId} == null"))
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("400"))
                     .throwException(new ExceptionUserNotFound("Usuario no encontrado"))
                   //  .process(exchange -> exchange.getOut().setBody(new ResponseDTO("no envio el id")))
@@ -132,13 +147,12 @@ public class CrudRoute extends RouteBuilder {
                 .otherwise()
                     //.bean(cache)//si
                     //.process(processDataExchangeProcessor)//si
-                    .to("sql: insert INTO user(userId, userName, userAge) VALUES (:#id, :#name, :#age)?dataSource=#dataSource")
+                    .setHeader("userId",simple("${body.userId}"))
+                    .setHeader("userName",simple("${body.userName}"))
+                    .setHeader("userAge",simple("${body.userAge}"))
+                    .to("sql: insert INTO user(userId, userName, userAge) VALUES (:#userId, :#userName, :#userAge)?dataSource=#dataSource")
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("200"))
                 .log("${body}")
                 .end();
-
-
-
     }
-
 }

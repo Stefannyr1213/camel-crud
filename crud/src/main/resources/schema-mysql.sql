@@ -1,7 +1,7 @@
 DROP TABLE IF EXISTS user;
 
 CREATE TABLE user (
-  userId VARCHAR(10) NOT NULL,
+  userId VARCHAR(10) NOT NULL PRIMARY KEY,
   userName VARCHAR(100) NOT NULL,
   userAge INT(10)
 );

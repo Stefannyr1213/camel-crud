@@ -11,9 +11,9 @@ public class SetDataExchangeProcessor implements Processor {
     public void process(Exchange exchange)throws Exception{
         System.out.println( exchange.getIn().getBody(String.class));
         Usuario usuario= new Usuario();
-        usuario.setId("1006188867");
-        usuario.setName("David");
-        usuario.setAge(22);
+        usuario.setUserId("1006188867");
+        usuario.setUserName("David");
+        usuario.setUserAge(22);
         exchange.getIn().setBody(usuario);
     }
 }

@@ -17,9 +17,9 @@ private static final Logger LOGGER= LoggerFactory.getLogger(ProcessDataExchangeP
     public void process(Exchange exchange)throws Exception{
        Usuario usuario=exchange.getIn().getBody(Usuario.class);
        LOGGER.info(" Post Usuario: id: {},name: {},age: {}"
-               ,usuario.getId()
-       ,usuario.getName()
-       ,usuario.getAge());
+               ,usuario.getUserId()
+       ,usuario.getUserName()
+       ,usuario.getUserAge());
         ResponseDTO responseDTO=new ResponseDTO("El usuario se agrego correctamente");
 
         exchange.getOut().setBody(responseDTO);

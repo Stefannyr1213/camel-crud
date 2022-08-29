@@ -10,53 +10,56 @@ import javax.validation.constraints.Null;
 
 
 public class Usuario {
-    @JsonTypeId
+
     @NotBlank
-    @JsonProperty("id")
-    private String id;
+    @JsonProperty("userId")
+    private String userId;
     @NotBlank
-    @JsonProperty("name")
-    private String name;
+    @JsonProperty("userName")
+    private String userName;
     @Min(value = 1)
-    @JsonProperty("age")
-    private int age;
+    @JsonProperty("userAge")
+    private int userAge;
 
-    public Usuario()
-    {
-
-    }
-    public Usuario(String id, String name, int age) {
-        this.id = id;
-        this.name = name;
-        this.age = age;
+    public Usuario() {
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public int getAge() {
-        return age;
-    }
-
-    public void setAge(int age) {
-        this.age = age;
+    public Usuario(String userId, String userName, int userAge) {
+        this.userId = userId;
+        this.userName = userName;
+        this.userAge = userAge;
     }
 
     @Override
-    public String toString(){
-        return "id: "+id+" name: "+name+" age: "+age;
+    public String toString() {
+        return "Usuario{" +
+                "userId='" + userId + '\'' +
+                ", userName='" + userName + '\'' +
+                ", userAge=" + userAge +
+                '}';
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public int getUserAge() {
+        return userAge;
+    }
+
+    public void setUserAge(int userAge) {
+        this.userAge = userAge;
     }
 }

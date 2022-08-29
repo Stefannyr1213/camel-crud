@@ -17,7 +17,7 @@ public class Cache  {
     @Handler
     public void addUser(@Body Usuario usuario) {
 
-        listUsuario.put(usuario.getId(),usuario);
+        listUsuario.put(usuario.getUserId(),usuario);
     }
     public List<Usuario> getUsers(){
         return new ArrayList<>(listUsuario.values());
@@ -37,7 +37,7 @@ public class Cache  {
         return m;
     }
     public Usuario update(@Body Usuario usuario){
-        listUsuario.put(usuario.getId(), usuario);
-        return listUsuario.get(usuario.getId());
+        listUsuario.put(usuario.getUserId(), usuario);
+        return listUsuario.get(usuario.getUserId());
     }
 }
