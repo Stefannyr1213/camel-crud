@@ -5,6 +5,7 @@ import com.camel.crud.entity.Usuario;
 
 import com.camel.crud.exception.ExceptionUserNotExists;
 import com.camel.crud.exception.ExceptionUserNotFound;
+import com.camel.crud.exception.ExceptionUserRepeat;
 import com.camel.crud.process.Cache;
 import com.camel.crud.process.ProcessDataExchangeProcessor;
 import com.camel.crud.process.SetDataExchangeProcessor;
@@ -90,8 +91,7 @@ public class CrudRoute extends RouteBuilder {
                 .setHeader("userId",simple("${body.userId}"))
                 .setHeader("userName",simple("${body.userName}"))
                 .setHeader("userAge",simple("${body.userAge}"))
-                .to("sql: insert INTO user(userId, userName, userAge) VALUES (:#userId, :#userName, :#userAge)?dataSource=#dataSource")
-
+                .to("sql: UPDATE user SET userName = :#userName, userAge = :#userAge WHERE userId=:#${body.userId}?dataSource=#dataSource")
                 .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("200"))
                 .log("${body}")
                 .end();
@@ -144,6 +144,12 @@ public class CrudRoute extends RouteBuilder {
                     .throwException(new ExceptionUserNotFound("Usuario no encontrado"))
                   //  .process(exchange -> exchange.getOut().setBody(new ResponseDTO("no envio el id")))
                    // .setBody(bean(new ResponseDTO("no envio el id")))
+
+                .when(simple("${}"))//si el id ya existe
+                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("400"))
+                .throwException(new ExceptionUserRepeat("Usuario ya existe"))
+                .log("${body.userId}")
+
                 .otherwise()
                     //.bean(cache)//si
                     //.process(processDataExchangeProcessor)//si
@@ -152,7 +158,8 @@ public class CrudRoute extends RouteBuilder {
                     .setHeader("userAge",simple("${body.userAge}"))
                     .to("sql: insert INTO user(userId, userName, userAge) VALUES (:#userId, :#userName, :#userAge)?dataSource=#dataSource")
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("200"))
-                .log("${body}")
+
+
                 .end();
     }
 }
