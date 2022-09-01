@@ -69,40 +69,59 @@ public class CrudRoute extends RouteBuilder {
 
         rest("usuario")
                 .post("/post").description("Post usuario").type(Usuario.class).outType(ResponseDTO.class)
-                .to("direct:postUsuario")
+                    .to("direct:postUsuario")
                 .get("/").outType(Usuario[].class)
-                .to("direct:getUsuarios")
+                    .to("direct:getUsuarios")
                 .get("/{id}").outType(Usuario.class)
-                .to("direct:getUsuario")
+                    .to("direct:getUsuario")
                 .delete("/{id}").outType(String.class)
-                .to("direct:delete")
+                    .to("direct:delete")
                 .put("/put").type(Usuario.class).outType(Usuario.class)
-                .to("direct:update");
+                    .to("direct:update");
 
         from("direct:update").streamCaching()
                 .log("Realizando update ${body.userId}")
                 .setHeader("userId",simple("${body.userId}"))
+                .setProperty("bodyOriginal",body()) //backup body de ingreso
+                .setProperty("userIdBody",simple("${body.userId}")) //coloco user id
                 .choice()
                     .when(simple("${body.userId} == null"))
-                    .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("400"))
-                    .throwException(new ExceptionUserNotFound("Usuario no encontrado"))
-                .otherwise()
+                        .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("400"))
+                        //.setBody(constant(new ResponseDTO("Usuario no encontrado")))
+                        .process((exchange) -> {
+                            String id = exchange.getProperty("userIdBody", String.class);
+                            exchange.getIn().setBody(new ResponseDTO("Usuario no encontrado"));
+                        })
+                        .marshal(jsonDTO)
+                        .throwException(new ExceptionUserNotFound("Usuario no encontrado"))//segundo filtro: buscar si el id existe
+                    .when(simple("${body.userId} != null"))
+                        .to("sql:{{selectById}}:#${body.userId}{{sqlDatasource}}{{sqlDatasourceParameter}}")
+                        .log("Body despues de consulta ${body}")
+                        .choice()
+                            //verifica si la consulta a la bd es nula, si es asi, puedo guardarlo en bd
+                            .when(body().isNotNull())
+                            .process((exchange) -> {
+                                String id = exchange.getProperty("userIdBody", String.class);
+                                exchange.getIn().setBody(exchange.getProperty("bodyOriginal"));
+                            })
+                            .log(" Body despues de process ${body}")
+                //.otherwise()
                     //.bean(cache,"update")
-                .setHeader("userId",simple("${body.userId}"))
-                .setHeader("userName",simple("${body.userName}"))
-                .setHeader("userAge",simple("${body.userAge}"))
-                .to("sql: UPDATE user SET userName = :#userName, userAge = :#userAge WHERE userId=:#${body.userId}?dataSource=#dataSource")
-                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("200"))
+                    .setHeader("userId",simple("${body.userId}"))
+                    .setHeader("userName",simple("${body.userName}"))
+                    .setHeader("userAge",simple("${body.userAge}"))
+                    .to("sql: UPDATE user SET userName = :#userName, userAge = :#userAge WHERE userId=:#${body.userId}?dataSource=#dataSource")
+                    .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("200"))
                 .log("${body}")
                 .end();
 
         from("direct:delete")
                 .log("Realizando delete usuario")
-                .to("sql:DELETE FROM user WHERE userId =:#id?dataSource=#dataSource")
+                .to("sql:{{deleteById}}:#id{{sqlDatasource}}")
                 .choice()
                     .when(simple("${header.id} == null"))
-                    .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("400"))
-                    .throwException(new ExceptionUserNotFound("Usuario no encontrado"))
+                        .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("400"))
+                        .throwException(new ExceptionUserNotFound("Usuario no encontrado"))
                 .otherwise()
                     //.bean(cache, "delete")
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("404"))
@@ -112,54 +131,57 @@ public class CrudRoute extends RouteBuilder {
                 .log("Realizando get usuario ${header.id}")
                 //.bean(cache, "getUser(${header.id})")
                 //.setHeader("userId",simple("${header.id}"))
-                .to("sql:select * from user where userId = :#id ?dataSource=#dataSource&outputType=SelectOne&outputClass=com.camel.crud.entity.Usuario")
+                .to("sql:{{selectById}}:#id{{sqlDatasource}}{{sqlDatasourceParameter}}")
                 .log("${body}")
                 .choice()
                     //.bean(cache,"getUsers")
                     //.setBody(simple("getUsers.userId"))
                     .when(body().isNull())//v
-                    .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("400"))
-                    .throwException(new ExceptionUserNotExists("Usuario no Existe"))
+                        .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("400"))
+                        .throwException(new ExceptionUserNotExists("Usuario no Existe"))
                 .endChoice()
                 .otherwise()
-                .log("otherwise")
+                    .log("otherwise")
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("200"))
                 .end()
                 .log("${body}")
                 .end();
 
         from("direct:getUsuarios")
-                        .log("Realizando get")
-                       // .bean(cache,"getUsers")//si
-                .to("sql:select * from user?dataSource=#dataSource")
+                .log("Realizando get")
+                // .bean(cache,"getUsers")//si
+                .to("sql:{{selectAll}}{{sqlDatasource}}")
                 .log("sql ${body}");
-
 
         from("direct:postUsuario").streamCaching()
                 .log("Realizando post ${body.userId}")
-                //.to("bean-validator:validar-usuario")
+                .to("bean-validator:validar-usuario")//
+                .log("Body de json -> ${body}")
+                    .setProperty("bodyOriginal",body()) //backup body de ingreso
+                .setProperty("userIdBody",simple("${body.userId}")) //coloco user id
+                //consulto a la bd si existe otro user con mismo id
+                //.to("sql: select * from user where userId= :#${body.userId}?dataSource=#dataSource") //se reescribe body con resultado de la consulta
+                .to("sql:{{selectById}}:#${body.userId}{{sqlDatasource}}{{sqlDatasourceParameter}}")
+                .log("Body despues de consulta ${body}")
                 .choice()
-                    .when(simple("${body.userId} == null"))
-                    .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("400"))
-                    .throwException(new ExceptionUserNotFound("Usuario no encontrado"))
-                  //  .process(exchange -> exchange.getOut().setBody(new ResponseDTO("no envio el id")))
-                   // .setBody(bean(new ResponseDTO("no envio el id")))
-
-                .when(simple("${}"))//si el id ya existe
-                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("400"))
-                .throwException(new ExceptionUserRepeat("Usuario ya existe"))
-                .log("${body.userId}")
-
+                    //verifica si la consulta a la bd es nula, si es asi, puedo guardarlo en bd
+                    .when(body().isNotNull())
+                        .process((exchange) -> {
+                            String id = exchange.getProperty("userIdBody", String.class);
+                            exchange.getIn().setBody(new ResponseDTO("El usuario con Id:" + id + " ya existe"));
+                        })
+                    .log(" Body despues de process ${body}")
                 .otherwise()
-                    //.bean(cache)//si
-                    //.process(processDataExchangeProcessor)//si
+                    .process((exchange) -> {
+                        exchange.getIn().setBody(exchange.getProperty("bodyOriginal"));
+                    })
                     .setHeader("userId",simple("${body.userId}"))
                     .setHeader("userName",simple("${body.userName}"))
                     .setHeader("userAge",simple("${body.userAge}"))
-                    .to("sql: insert INTO user(userId, userName, userAge) VALUES (:#userId, :#userName, :#userAge)?dataSource=#dataSource")
+                    .to("sql:{{insertUser}}(:#userId, :#userName, :#userAge){{sqlDatasource}}")
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("200"))
-
-
                 .end();
+
     }
+
 }
