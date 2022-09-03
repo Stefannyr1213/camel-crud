@@ -104,13 +104,16 @@ public class CrudRoute extends RouteBuilder {
                                 String id = exchange.getProperty("userIdBody", String.class);
                                 exchange.getIn().setBody(exchange.getProperty("bodyOriginal"));
                             })
+                           // .marshal(jsonUsuario)
+
                             .log(" Body despues de process ${body}")
                 //.otherwise()
                     //.bean(cache,"update")
                     .setHeader("userId",simple("${body.userId}"))
                     .setHeader("userName",simple("${body.userName}"))
                     .setHeader("userAge",simple("${body.userAge}"))
-                    .to("sql: UPDATE user SET userName = :#userName, userAge = :#userAge WHERE userId=:#${body.userId}?dataSource=#dataSource")
+                .log("user")
+                    .to("sql: UPDATE user SET userName = :#userName, userAge = :#userAge WHERE userId=:#userId?dataSource=#dataSource")
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("200"))
                 .log("${body}")
                 .end();
@@ -131,7 +134,7 @@ public class CrudRoute extends RouteBuilder {
                 .log("Realizando get usuario ${header.id}")
                 //.bean(cache, "getUser(${header.id})")
                 //.setHeader("userId",simple("${header.id}"))
-                .to("sql:{{selectById}}:#id{{sqlDatasource}}{{sqlDatasourceParameter}}")
+                .to("sql:{{selectId}}{{sqlDatasource}}{{sqlDatasourceParameter}}")
                 .log("${body}")
                 .choice()
                     //.bean(cache,"getUsers")
@@ -150,7 +153,10 @@ public class CrudRoute extends RouteBuilder {
         from("direct:getUsuarios")
                 .log("Realizando get")
                 // .bean(cache,"getUsers")//si
-                .to("sql:{{selectAll}}{{sqlDatasource}}")
+                .setHeader("CamelSqlQuery",simple("{{selectAll}}"))
+                .log("header: ${header.CamelSqlQuery}")
+                .to("sql:queryfromheader?{{sqlDatasource}}")
+
                 .log("sql ${body}");
 
         from("direct:postUsuario").streamCaching()
@@ -161,7 +167,7 @@ public class CrudRoute extends RouteBuilder {
                 .setProperty("userIdBody",simple("${body.userId}")) //coloco user id
                 //consulto a la bd si existe otro user con mismo id
                 //.to("sql: select * from user where userId= :#${body.userId}?dataSource=#dataSource") //se reescribe body con resultado de la consulta
-                .to("sql:{{selectById}}:#${body.userId}{{sqlDatasource}}{{sqlDatasourceParameter}}")
+                .to("sql:{{selectById}}:#${body.userId}?{{sqlDatasource}}{{sqlDatasourceParameter}}")
                 .log("Body despues de consulta ${body}")
                 .choice()
                     //verifica si la consulta a la bd es nula, si es asi, puedo guardarlo en bd
@@ -178,7 +184,7 @@ public class CrudRoute extends RouteBuilder {
                     .setHeader("userId",simple("${body.userId}"))
                     .setHeader("userName",simple("${body.userName}"))
                     .setHeader("userAge",simple("${body.userAge}"))
-                    .to("sql:{{insertUser}}(:#userId, :#userName, :#userAge){{sqlDatasource}}")
+                    .to("sql:{{insertUser}}(:#userId, :#userName, :#userAge)?{{sqlDatasource}}")
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("200"))
                 .end();
 
